@@ -1,0 +1,44 @@
+model_version=2
+# modified models.py
+MODEL_PATH=os.path.join("c:/USHUR/PythonProg/DATAREP/FastText","infersent2.pkl")
+
+params_model = {'bsize': 64, 'word_emb_dim': 300, 'enc_lstm_dim': 2048,
+                'pool_type': 'max', 'dpout_model': 0.0, 'version': model_version}
+model= InferSent(params_model)
+model.load_state_dict(torch.load(MODEL_PATH))
+W2V_PATH=os.path.join("c:/USHUR/PythonProg/DATAREP/FastText",'crawl-300d-2M.vec')
+model.set_w2v_path(W2V_PATH)
+
+# Load embeddings of K most frequent words
+model.build_vocab_k_words(K=100000)
+di=[]
+for index, s in enumerate(df_body_list):
+    if type(s) is not str:
+        di.append(index)
+        continue
+
+
+    s = s.split(',')
+    s = list(filter(lambda s: s != ' ', s))
+    s = list(filter(lambda s: itmatters(returntoken(s)), s))
+
+    if len(s) == 0:
+        di.append(index)
+        
+        continue
+    #print(type(s), len(s), s)
+    embeddings = model.encode(s, tokenize=True)
+    #print(type(embeddings),embeddings.shape)
+    mxp=np.max(embeddings,axis=0)
+    #print(mxp.shape)
+    X_train = np.append(X_train, mxp.reshape(1, -1), axis=0)
+
+
+
+Y_traindf.drop(di,inplace=True)
+#drop rows with no sentences
+
+Y_train=Y_traindf.values
+print("shape of X,Y train", X_train.shape, Y_train.shape)
+X_train, x_test, Y_train, y_test = train_test_split(X_train, Y_train, test_size=0.2)
+print(X_train.shape, x_test.shape, Y_train.shape, y_test.shape)
